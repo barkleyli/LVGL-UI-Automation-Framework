@@ -61,6 +61,9 @@ htmlcov/
 .coverage
 .coverage.*
 coverage.xml
+*.egg-info/
+build/
+dist/
 
 # Screenshots and test outputs
 screenshots/

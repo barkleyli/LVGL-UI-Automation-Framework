@@ -197,17 +197,17 @@ void emulate_click_at(int x, int y) {
         printf("  Sending events to target object: %p\n", (void*)target);
         
         // Send press event
-        lv_event_send(target, LV_EVENT_PRESSED, NULL);
+        lv_obj_send_event(target, LV_EVENT_PRESSED, NULL);
         printf("  Press event sent\n");
         
         usleep(50000); // 50ms press duration
         
         // Send click event
-        lv_event_send(target, LV_EVENT_CLICKED, NULL);
+        lv_obj_send_event(target, LV_EVENT_CLICKED, NULL);
         printf("  Click event sent\n");
         
         // Send release event
-        lv_event_send(target, LV_EVENT_RELEASED, NULL);
+        lv_obj_send_event(target, LV_EVENT_RELEASED, NULL);
         printf("  Release event sent\n");
         
         usleep(50000); // 50ms after release

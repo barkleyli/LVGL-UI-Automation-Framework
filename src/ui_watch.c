@@ -183,6 +183,10 @@ static void hr_screen_click_handler(lv_event_t *e) {
     }
 }
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4505) // unreferenced local function has been removed
+#endif
 static void activity_screen_event_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     
@@ -197,6 +201,9 @@ static void activity_screen_event_handler(lv_event_t *e) {
         show_screen(SCREEN_MAIN);
     }
 }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 static void main_screen_gesture_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);

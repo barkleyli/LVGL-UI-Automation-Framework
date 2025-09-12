@@ -33,7 +33,6 @@ A comprehensive testing and automation framework for LVGL-based user interfaces.
 #### 1. Clone the Repository
 ```bash
 git clone --recursive https://github.com/barkleyli/LVGL-UI-Automation-Framework.git
-cd lvgl-ui-automation
 ```
 
 **Note**: This repository uses Git submodules for LVGL and LodePNG dependencies. The `--recursive` flag automatically initializes and clones the submodules. SDL2 development libraries are included for Windows support.

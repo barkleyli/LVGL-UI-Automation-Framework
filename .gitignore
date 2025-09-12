@@ -91,7 +91,7 @@ Thumbs.db
 nul
 .claude/
 
-# Third-party dependencies - handled via Git submodules
-# The third_party/ directory will be managed by .gitmodules
-# Only ignore specific files that shouldn't be tracked
+# Third-party dependencies - handled via Git submodules  
+# LVGL and LodePNG are submodules, SDL2 for Windows only (not in CI)
+# STB is a single header file directly included
 third_party/sdl2/

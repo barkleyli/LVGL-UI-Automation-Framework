@@ -163,9 +163,9 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v1
     
-    - name: Skip vcpkg (using included SDL2)
+    - name: Install SDL2 for Windows CI
       run: |
-        echo "Using SDL2 included in repository under third_party/sdl2"
+        vcpkg install sdl2:x64-windows
     
     - name: Verify submodules (Windows)
       shell: bash

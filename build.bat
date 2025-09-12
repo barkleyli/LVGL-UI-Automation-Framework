@@ -48,7 +48,7 @@ cd build
 
 rem Configure CMake
 echo Configuring CMake for Visual Studio...
-cmake .. -G "Visual Studio 16 2019" -A x64
+cmake .. -G "Visual Studio 17 2022" -A x64
 if errorlevel 1 (
     echo CMake configuration failed. Trying with default generator...
     cmake ..

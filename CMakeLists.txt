@@ -12,13 +12,14 @@ endif()
 
 # Find required packages
 if(WIN32)
-    # For Windows, try to find SDL2 in our third_party directory first
+    # For Windows, try to find SDL2 in our third_party directory first, then fallback to system
     set(SDL2_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sdl2/SDL2-devel-2.30.8-VC/SDL2-2.30.8)
     
     find_path(SDL2_INCLUDE_DIR SDL.h 
         HINTS 
             ENV SDL2DIR 
             ${SDL2_DIR}
+            ${CMAKE_TOOLCHAIN_FILE}/../../../installed/x64-windows  # vcpkg path
         PATH_SUFFIXES include
     )
     
@@ -90,10 +91,6 @@ if(EXISTS ${LVGL_DIR})
     # Ensure LVGL can find SDL2 headers
     target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR})
     
-    # On Linux, also add SDL2 subdirectory to include path for compatibility
-    if(NOT WIN32)
-        target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR}/SDL2)
-    endif()
     
     # Suppress warnings for LVGL to get clean build output
     if(MSVC)

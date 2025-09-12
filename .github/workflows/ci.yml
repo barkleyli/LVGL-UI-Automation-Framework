@@ -174,13 +174,16 @@ jobs:
         git submodule status
         ls -la third_party/ || dir third_party
     
-    - name: Build using build.bat
+    - name: Build with vcpkg integration
       shell: cmd
       run: |
-        build.bat
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        cmake --build . --config Release
         echo "Build completed. Checking build outputs:"
-        dir build\Release\ || echo "Release directory not found"
-        dir build\ || echo "Build directory not found"
+        dir Release\ || echo "Release directory not found"
+        dir . || echo "Build directory contents:"
     
     - name: Setup Python
       uses: actions/setup-python@v4

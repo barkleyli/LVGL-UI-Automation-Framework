@@ -32,7 +32,7 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Verify submodules
+    - name: Verify submodules and SDL2
       run: |
         echo "Checking submodule status:"
         git submodule status
@@ -42,17 +42,23 @@ jobs:
         ls -la third_party/lodepng/ || echo "LodePNG directory not found"
         echo "STB directory contents:"
         ls -la third_party/stb/ || echo "STB directory not found"
+        echo "SDL2 configuration:"
+        pkg-config --cflags --libs sdl2 || echo "SDL2 pkg-config failed"
+        find /usr/include -name "SDL.h" 2>/dev/null || echo "SDL.h not found in /usr/include"
     
     - name: Configure CMake
       run: |
         mkdir -p build
         cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DHAVE_LVGL=ON
+        cmake .. -DCMAKE_BUILD_TYPE=Release
     
     - name: Build automation framework
       run: |
         cd build
         make -j$(nproc)
+        echo "Build completed. Checking build outputs:"
+        ls -la ./
+        ls -la ./ | grep lvgl || echo "No lvgl executables found"
     
     - name: Install Python test client
       run: |
@@ -172,6 +178,9 @@ jobs:
       shell: cmd
       run: |
         build.bat
+        echo "Build completed. Checking build outputs:"
+        dir build\Release\ || echo "Release directory not found"
+        dir build\ || echo "Build directory not found"
     
     - name: Setup Python
       uses: actions/setup-python@v4

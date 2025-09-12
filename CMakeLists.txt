@@ -90,6 +90,11 @@ if(EXISTS ${LVGL_DIR})
     # Ensure LVGL can find SDL2 headers
     target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR})
     
+    # On Linux, also add SDL2 subdirectory to include path for compatibility
+    if(NOT WIN32)
+        target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR}/SDL2)
+    endif()
+    
     # Suppress warnings for LVGL to get clean build output
     if(MSVC)
         target_compile_options(lvgl PRIVATE

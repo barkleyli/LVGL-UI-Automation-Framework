@@ -165,7 +165,8 @@ void emulate_click_at(int x, int y) {
     lv_obj_t *target = NULL;
     
     // Approach 1: Try lv_indev_search_obj
-    target = lv_indev_search_obj(active_screen, x, y);
+    lv_point_t point = {x, y};
+    target = lv_indev_search_obj(active_screen, &point);
     if (target) {
         printf("  Found target via lv_indev_search_obj at (%d, %d): %p\n", x, y, (void*)target);
     } else {

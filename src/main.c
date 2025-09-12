@@ -142,7 +142,7 @@ int main(void) {
     printf("Watch UI created\n");
     
     // Force initial screen refresh
-    lv_obj_invalidate(lv_scr_act());
+    lv_obj_invalidate(lv_screen_active());
     lv_refr_now(NULL);
 #else
     printf("Warning: LVGL not available, running in stub mode\n");

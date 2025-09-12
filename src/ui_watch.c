@@ -209,7 +209,7 @@ static void main_screen_gesture_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     
     if (code == LV_EVENT_GESTURE) {
-        lv_indev_t *indev = lv_indev_get_act();
+        lv_indev_t *indev = lv_indev_active();
         lv_dir_t dir = lv_indev_get_gesture_dir(indev);
         
         printf("Gesture detected on main screen, direction: %d (1=left, 2=right, 4=up, 8=down)\n", dir);
@@ -235,7 +235,7 @@ static void hr_screen_gesture_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
     
     if (code == LV_EVENT_GESTURE) {
-        lv_indev_t *indev = lv_indev_get_act();
+        lv_indev_t *indev = lv_indev_active();
         lv_dir_t dir = lv_indev_get_gesture_dir(indev);
         
         printf("Gesture on heart rate screen, direction: %d\n", dir);
@@ -260,7 +260,7 @@ static lv_coord_t activity_start_pos = 0;
 
 static void activity_screen_gesture_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_indev_t *indev = lv_indev_get_act();
+    lv_indev_t *indev = lv_indev_active();
     
     if (code == LV_EVENT_PRESSED) {
         lv_point_t point;

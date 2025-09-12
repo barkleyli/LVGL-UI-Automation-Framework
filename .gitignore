@@ -95,3 +95,4 @@ nul
 # LVGL and LodePNG are submodules, SDL2 for Windows only (not in CI)
 # STB is a single header file directly included
 third_party/sdl2/
+DESIGN.md

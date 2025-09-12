@@ -1,0 +1,345 @@
+name: LVGL UI Automation Framework CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libsdl2-dev \
+          cmake \
+          build-essential \
+          xvfb \
+          x11-utils \
+          python3-pip
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Initialize LVGL submodule
+      run: |
+        if [ ! -d "third_party/lvgl/.git" ]; then
+          git submodule add https://github.com/lvgl/lvgl.git third_party/lvgl || true
+          git submodule update --init --recursive
+        fi
+    
+    - name: Initialize LodePNG submodule
+      run: |
+        if [ ! -d "third_party/lodepng/.git" ]; then
+          cd third_party
+          git clone https://github.com/lvgl/lodepng.git
+          cd ..
+        fi
+    
+    - name: Configure CMake
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DHAVE_LVGL=ON
+    
+    - name: Build automation framework
+      run: |
+        cd build
+        make -j$(nproc)
+    
+    - name: Install Python test client
+      run: |
+        cd python-client
+        pip install -e .
+        pip install -r requirements.txt
+    
+    - name: Start virtual display
+      run: |
+        export DISPLAY=:99
+        Xvfb :99 -screen 0 1024x768x24 &
+        sleep 3
+    
+    - name: Run connection test
+      env:
+        DISPLAY: :99
+      run: |
+        # Start the automation server in background
+        cd build
+        timeout 60s ./lvgl-ui-automation &
+        SERVER_PID=$!
+        
+        # Wait for server startup
+        sleep 5
+        
+        # Test basic connectivity
+        cd ../python-client/tests
+        python test_connection_check.py || TEST_RESULT=$?
+        
+        # Kill server
+        kill $SERVER_PID 2>/dev/null || true
+        
+        exit ${TEST_RESULT:-0}
+    
+    - name: Run comprehensive test suite
+      env:
+        DISPLAY: :99
+      run: |
+        # Start the automation server
+        cd build
+        timeout 120s ./lvgl-ui-automation &
+        SERVER_PID=$!
+        
+        # Wait for server to be ready
+        sleep 8
+        
+        # Run full test suite
+        cd ../python-client
+        python -m pytest tests/test_simple_demo.py -v --tb=short || TEST_RESULT=$?
+        
+        # Kill server
+        kill $SERVER_PID 2>/dev/null || true
+        
+        exit ${TEST_RESULT:-0}
+    
+    - name: Run demo validation
+      env:
+        DISPLAY: :99
+      run: |
+        # Start server for demo
+        cd build
+        timeout 90s ./lvgl-ui-automation &
+        SERVER_PID=$!
+        
+        # Wait for ready
+        sleep 5
+        
+        # Run demo script
+        cd ../python-client
+        python demo.py || DEMO_RESULT=$?
+        
+        # Kill server
+        kill $SERVER_PID 2>/dev/null || true
+        
+        exit ${DEMO_RESULT:-0}
+    
+    - name: Archive test screenshots
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-screenshots-linux
+        path: screenshots/
+        retention-days: 7
+    
+    - name: Archive build artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: automation-server-linux
+        path: build/lvgl-ui-automation
+        retention-days: 7
+
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v1
+    
+    - name: Install vcpkg dependencies
+      run: |
+        vcpkg install sdl2:x64-windows
+    
+    - name: Initialize LVGL submodule
+      shell: bash
+      run: |
+        if [ ! -d "third_party/lvgl/.git" ]; then
+          git submodule add https://github.com/lvgl/lvgl.git third_party/lvgl || true
+          git submodule update --init --recursive
+        fi
+    
+    - name: Initialize LodePNG submodule
+      shell: bash
+      run: |
+        if [ ! -d "third_party/lodepng/.git" ]; then
+          cd third_party
+          git clone https://github.com/lvgl/lodepng.git
+          cd ..
+        fi
+    
+    - name: Build using build.bat
+      shell: cmd
+      run: |
+        build.bat
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install Python test client
+      run: |
+        cd python-client
+        pip install -e .
+        pip install -r requirements.txt
+    
+    - name: Test Python client import
+      run: |
+        cd python-client
+        python -c "from lvgl_client import LVGLTestClient; print('Python client import: OK')"
+    
+    - name: Archive Windows build
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: automation-server-windows
+        path: build/Release/lvgl-ui-automation.exe
+        retention-days: 7
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: automation-server-linux
+        path: build/
+    
+    - name: Make binary executable
+      run: chmod +x build/lvgl-ui-automation
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install Python dependencies
+      run: |
+        cd python-client
+        pip install -e .
+        pip install -r requirements.txt
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xvfb x11-utils
+    
+    - name: Run extended integration tests
+      env:
+        DISPLAY: :99
+      run: |
+        # Start Xvfb
+        Xvfb :99 -screen 0 1024x768x24 &
+        sleep 3
+        
+        # Start automation server
+        cd build
+        timeout 180s ./lvgl-ui-automation &
+        SERVER_PID=$!
+        
+        # Wait for server ready
+        sleep 10
+        
+        # Run connection validation
+        cd ../python-client/tests
+        python test_connection_check.py
+        
+        # Run comprehensive test suite
+        cd ..
+        python -m pytest tests/test_simple_demo.py -v --tb=short || TEST_RESULT=$?
+        
+        # Run demo validation
+        python demo.py || DEMO_RESULT=$?
+        
+        # Cleanup
+        kill $SERVER_PID 2>/dev/null || true
+        
+        # Report results
+        if [ "${TEST_RESULT:-0}" -ne 0 ]; then
+          echo "Test suite failed with code $TEST_RESULT"
+          exit $TEST_RESULT
+        fi
+        
+        if [ "${DEMO_RESULT:-0}" -ne 0 ]; then
+          echo "Demo validation failed with code $DEMO_RESULT"
+          exit $DEMO_RESULT
+        fi
+        
+        echo "All integration tests passed successfully"
+    
+    - name: Archive integration test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-results
+        path: |
+          screenshots/
+          python-client/*.log
+        retention-days: 14
+
+  release-artifacts:
+    runs-on: ubuntu-latest
+    needs: [build-and-test, build-windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Download Linux build
+      uses: actions/download-artifact@v3
+      with:
+        name: automation-server-linux
+        path: artifacts/linux/
+    
+    - name: Download Windows build
+      uses: actions/download-artifact@v3
+      with:
+        name: automation-server-windows
+        path: artifacts/windows/
+    
+    - name: Create release package
+      run: |
+        # Package Linux build
+        cd artifacts/linux
+        tar -czf ../lvgl-ui-automation-linux-x64.tar.gz *
+        cd ../..
+        
+        # Package Windows build
+        cd artifacts/windows
+        zip -r ../lvgl-ui-automation-windows-x64.zip *
+        cd ../..
+    
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-packages
+        path: artifacts/*.tar.gz
+        retention-days: 30
+    
+    - name: Upload Windows release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-packages-windows
+        path: artifacts/*.zip
+        retention-days: 30

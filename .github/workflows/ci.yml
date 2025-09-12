@@ -165,6 +165,7 @@ jobs:
     - name: Install SDL2 for Windows CI
       run: |
         vcpkg install sdl2:x64-windows
+        echo "SDL2 installed via vcpkg"
     
     - name: Verify submodules (Windows)
       shell: bash
@@ -174,15 +175,34 @@ jobs:
         ls -la third_party/ || dir third_party
     
     - name: Build with vcpkg integration
-      shell: cmd
       run: |
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        echo "Configuring with CMake..."
+        
+        # Try vcpkg first
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
+        if ($LASTEXITCODE -ne 0) {
+          echo "CMake configuration failed with vcpkg, trying without vcpkg..."
+          cmake ..
+        }
+        
+        if ($LASTEXITCODE -ne 0) {
+          echo "CMake configuration failed!"
+          exit 1
+        }
+        
+        echo "Building with CMake..."
         cmake --build . --config Release
+        if ($LASTEXITCODE -ne 0) {
+          echo "Build failed!"
+          exit 1
+        }
+        
         echo "Build completed. Checking build outputs:"
-        dir Release\ || echo "Release directory not found"
-        dir . || echo "Build directory contents:"
+        ls Release/ -ErrorAction SilentlyContinue
+        ls . -ErrorAction SilentlyContinue
+      shell: pwsh
     
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -201,7 +221,7 @@ jobs:
         python -c "from lvgl_client import LVGLTestClient; print('Python client import: OK')"
     
     - name: Archive Windows build
-      if: always()
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: automation-server-windows

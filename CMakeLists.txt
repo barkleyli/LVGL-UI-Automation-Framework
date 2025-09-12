@@ -77,8 +77,18 @@ if(WIN32)
         message(STATUS "Found SDL2: ${SDL2_INCLUDE_DIR}")
     endif()
 else()
+    # Linux: Use pkg-config to find SDL2
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(SDL2 REQUIRED sdl2)
+    
+    # Convert pkg-config variables to match our Windows variable names
+    set(SDL2_INCLUDE_DIR ${SDL2_INCLUDE_DIRS})
+    set(SDL2_LIBRARIES ${SDL2_LIBRARIES})
+    
+    message(STATUS "Linux SDL2 found via pkg-config:")
+    message(STATUS "  SDL2_INCLUDE_DIRS: ${SDL2_INCLUDE_DIRS}")
+    message(STATUS "  SDL2_LIBRARIES: ${SDL2_LIBRARIES}")
+    message(STATUS "  SDL2_CFLAGS: ${SDL2_CFLAGS}")
 endif()
 
 # Find pthread (required for TCP server)
@@ -107,7 +117,20 @@ if(EXISTS ${LVGL_DIR})
     add_subdirectory(${LVGL_DIR})
     
     # Ensure LVGL can find SDL2 headers
-    target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR})
+    if(SDL2_INCLUDE_DIR)
+        message(STATUS "Adding SDL2 include directory to LVGL: ${SDL2_INCLUDE_DIR}")
+        target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR})
+    elseif(SDL2_INCLUDE_DIRS)
+        message(STATUS "Adding SDL2 include directories to LVGL: ${SDL2_INCLUDE_DIRS}")
+        target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIRS})
+    else()
+        message(WARNING "No SDL2 include directories found for LVGL!")
+    endif()
+    
+    # On Linux, also add compile flags from pkg-config
+    if(NOT WIN32 AND SDL2_CFLAGS)
+        target_compile_options(lvgl PUBLIC ${SDL2_CFLAGS})
+    endif()
     
     
     # Suppress warnings for LVGL to get clean build output

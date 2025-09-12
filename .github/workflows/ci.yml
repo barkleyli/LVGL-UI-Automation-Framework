@@ -165,7 +165,12 @@ jobs:
     - name: Install SDL2 for Windows CI
       run: |
         vcpkg install sdl2:x64-windows
-        echo "SDL2 installed via vcpkg"
+        if ($LASTEXITCODE -eq 0) {
+          Write-Host "SDL2 installed via vcpkg successfully"
+        } else {
+          Write-Host "Warning: vcpkg SDL2 installation failed, will try without vcpkg"
+        }
+      shell: pwsh
     
     - name: Verify submodules (Windows)
       shell: bash
@@ -174,34 +179,41 @@ jobs:
         git submodule status
         ls -la third_party/ || dir third_party
     
-    - name: Build with vcpkg integration
+    - name: Build without vcpkg (using local SDL2)
       run: |
         mkdir build
         cd build
-        echo "Configuring with CMake..."
+        Write-Host "Configuring with CMake (using local SDL2 in third_party)..."
         
-        # Try vcpkg first
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
-        if ($LASTEXITCODE -ne 0) {
-          echo "CMake configuration failed with vcpkg, trying without vcpkg..."
-          cmake ..
+        # Try default CMake configuration first (uses our local SDL2)
+        cmake ..
+        
+        # If that fails, try with vcpkg as fallback
+        if ($LASTEXITCODE -ne 0 -and $env:VCPKG_INSTALLATION_ROOT) {
+          Write-Host "Default CMake failed, trying with vcpkg as fallback..."
+          $vcpkgToolchain = "$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+          if (Test-Path $vcpkgToolchain) {
+            cmake .. "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain"
+          } else {
+            Write-Host "vcpkg toolchain not found at: $vcpkgToolchain"
+          }
         }
         
         if ($LASTEXITCODE -ne 0) {
-          echo "CMake configuration failed!"
+          Write-Host "All CMake configuration attempts failed!"
           exit 1
         }
         
-        echo "Building with CMake..."
+        Write-Host "Building with CMake..."
         cmake --build . --config Release
         if ($LASTEXITCODE -ne 0) {
-          echo "Build failed!"
+          Write-Host "Build failed!"
           exit 1
         }
         
-        echo "Build completed. Checking build outputs:"
-        ls Release/ -ErrorAction SilentlyContinue
-        ls . -ErrorAction SilentlyContinue
+        Write-Host "Build completed. Checking build outputs:"
+        Get-ChildItem Release -ErrorAction SilentlyContinue
+        Get-ChildItem . -ErrorAction SilentlyContinue
       shell: pwsh
     
     - name: Setup Python

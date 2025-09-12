@@ -131,7 +131,7 @@ jobs:
     
     - name: Archive test screenshots
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-screenshots-linux
         path: screenshots/
@@ -139,7 +139,7 @@ jobs:
     
     - name: Archive build artifacts
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: automation-server-linux
         path: build/lvgl-ui-automation
@@ -191,7 +191,7 @@ jobs:
     
     - name: Archive Windows build
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: automation-server-windows
         path: build/Release/lvgl-ui-automation.exe
@@ -209,7 +209,7 @@ jobs:
         submodules: recursive
     
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: automation-server-linux
         path: build/
@@ -278,7 +278,7 @@ jobs:
     
     - name: Archive integration test results
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: integration-test-results
         path: |
@@ -293,13 +293,13 @@ jobs:
     
     steps:
     - name: Download Linux build
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: automation-server-linux
         path: artifacts/linux/
     
     - name: Download Windows build
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: automation-server-windows
         path: artifacts/windows/
@@ -317,14 +317,14 @@ jobs:
         cd ../..
     
     - name: Upload release artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-packages
         path: artifacts/*.tar.gz
         retention-days: 30
     
     - name: Upload Windows release artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-packages-windows
         path: artifacts/*.zip

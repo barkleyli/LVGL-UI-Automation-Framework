@@ -183,27 +183,7 @@ static void hr_screen_click_handler(lv_event_t *e) {
     }
 }
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable: 4505) // unreferenced local function has been removed
-#endif
-static void activity_screen_event_handler(lv_event_t *e) {
-    lv_event_code_t code = lv_event_get_code(e);
-    
-    // Safety check: only process events if we're on the activity screen
-    if (watch_ui.current_screen != SCREEN_ACTIVITY) {
-        printf("Activity screen event ignored - not on activity screen\n");
-        return;
-    }
-    
-    if (code == LV_EVENT_CLICKED) {
-        printf("Activity screen clicked - back to main\n");
-        show_screen(SCREEN_MAIN);
-    }
-}
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+// activity_screen_event_handler removed - using activity_screen_gesture_handler instead
 
 static void main_screen_gesture_handler(lv_event_t *e) {
     lv_event_code_t code = lv_event_get_code(e);

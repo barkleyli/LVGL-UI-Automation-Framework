@@ -48,6 +48,7 @@ void signal_handler(int sig) {
 
 // TCP server thread function
 void* tcp_server_thread_func(void* arg) {
+    (void)arg; // Suppress unused parameter warning
     printf("Starting TCP server thread...\n");
     if (tcp_server_start() != TEST_OK) {
         printf("Failed to start TCP server\n");

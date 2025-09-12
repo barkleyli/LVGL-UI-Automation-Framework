@@ -35,7 +35,7 @@ A comprehensive testing and automation framework for LVGL-based user interfaces.
 git clone --recursive https://github.com/barkleyli/LVGL-UI-Automation-Framework.git
 ```
 
-**Note**: This repository uses Git submodules for LVGL and LodePNG dependencies. The `--recursive` flag automatically initializes and clones the submodules. SDL2 development libraries are included for Windows support.
+**Note**: This repository uses Git submodules for LVGL dependencies. The `--recursive` flag automatically initializes and clones the submodules. SDL2 development libraries are included for Windows support.
 
 If you forgot the `--recursive` flag, run:
 ```bash
@@ -284,7 +284,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Debug
 ```
 
-**Note**: This repository uses Git submodules for LVGL and LodePNG. Use `--recursive` flag or run `git submodule update --init --recursive` after cloning.
+**Note**: This repository uses Git submodules for LVGL. Use `--recursive` flag or run `git submodule update --init --recursive` after cloning.
 
 ### Adding New UI Components
 
@@ -329,7 +329,7 @@ cmake --build . --config Debug
 - All dependencies are included in the repository
 - If third_party/ directories appear empty after clone, check Git settings
 - On Windows: ensure Git LFS is installed if large files are not downloading
-- Verify CMake can find LVGL at third_party/lvgl and LodePNG at third_party/lodepng
+- Verify CMake can find LVGL at third_party/lvgl
 
 ### Debug Mode
 
@@ -360,4 +360,5 @@ Please ensure all tests pass and follow the existing code style conventions.
 - LVGL team for the excellent graphics library
 - SDL2 project for cross-platform windowing support
 - pytest community for the testing framework
+- STD stb_image_write for PNG processing
 - Contributors who helped improve the swipe gesture system

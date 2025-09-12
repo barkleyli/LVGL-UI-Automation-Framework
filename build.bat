@@ -30,16 +30,7 @@ if not exist "third_party\lvgl\.git" (
     echo LVGL already cloned
 )
 
-rem Setup LodePNG
-echo Setting up LodePNG...
-if not exist "third_party\lodepng" (
-    echo Cloning LodePNG...
-    cd third_party
-    git clone https://github.com/lvgl/lodepng.git
-    cd ..
-) else (
-    echo LodePNG already cloned
-)
+rem LodePNG not needed - using LVGL v9 built-in PNG support
 
 rem Create build directory
 echo Creating build directory...

@@ -38,8 +38,6 @@ jobs:
         git submodule status
         echo "LVGL directory contents:"
         ls -la third_party/lvgl/ || echo "LVGL directory not found"
-        echo "LodePNG directory contents:"
-        ls -la third_party/lodepng/ || echo "LodePNG directory not found"
         echo "STB directory contents:"
         ls -la third_party/stb/ || echo "STB directory not found"
         echo "SDL2 configuration:"

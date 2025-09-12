@@ -158,12 +158,6 @@ else()
     message(WARNING "Or clone LVGL manually into third_party/lvgl")
 endif()
 
-# LodePNG for PNG encoding
-set(LODEPNG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/lodepng)
-if(NOT EXISTS ${LODEPNG_DIR})
-    message(STATUS "LodePNG not found, will download during build")
-endif()
-
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -180,10 +174,7 @@ set(SOURCES
     src/screenshot.c
 )
 
-# Add LodePNG source if available
-if(EXISTS ${LODEPNG_DIR}/lodepng.cpp)
-    list(APPEND SOURCES ${LODEPNG_DIR}/lodepng.cpp)
-endif()
+# LodePNG not needed - LVGL v9 has built-in PNG support via stb_image_write
 
 # Create executable
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -237,12 +228,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 endif()
 
-# Create a custom target to download dependencies
-add_custom_target(download-deps
-    COMMAND ${CMAKE_COMMAND} -E echo "Downloading LodePNG..."
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_SOURCE_DIR}/third_party/lodepng
-    COMMENT "Downloading dependencies"
-)
+# Dependencies are managed via Git submodules - no manual download needed
 
 # Print build instructions
 message(STATUS "")
@@ -260,10 +246,7 @@ message(STATUS "")
 message(STATUS "2. Get LVGL:")
 message(STATUS "   git submodule add https://github.com/lvgl/lvgl.git third_party/lvgl")
 message(STATUS "")
-message(STATUS "3. Get LodePNG:")
-message(STATUS "   cd third_party && git clone https://github.com/lvgl/lodepng.git")
-message(STATUS "")
-message(STATUS "4. Build:")
+message(STATUS "3. Build:")
 message(STATUS "   mkdir build && cd build")
 message(STATUS "   cmake .. && make")
 message(STATUS "")

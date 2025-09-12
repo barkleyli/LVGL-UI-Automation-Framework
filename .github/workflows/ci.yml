@@ -32,20 +32,16 @@ jobs:
       with:
         python-version: '3.9'
     
-    - name: Initialize LVGL submodule
+    - name: Verify submodules
       run: |
-        if [ ! -d "third_party/lvgl/.git" ]; then
-          git submodule add https://github.com/lvgl/lvgl.git third_party/lvgl || true
-          git submodule update --init --recursive
-        fi
-    
-    - name: Initialize LodePNG submodule
-      run: |
-        if [ ! -d "third_party/lodepng/.git" ]; then
-          cd third_party
-          git clone https://github.com/lvgl/lodepng.git
-          cd ..
-        fi
+        echo "Checking submodule status:"
+        git submodule status
+        echo "LVGL directory contents:"
+        ls -la third_party/lvgl/ || echo "LVGL directory not found"
+        echo "LodePNG directory contents:"
+        ls -la third_party/lodepng/ || echo "LodePNG directory not found"
+        echo "STB directory contents:"
+        ls -la third_party/stb/ || echo "STB directory not found"
     
     - name: Configure CMake
       run: |
@@ -161,26 +157,16 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v1
     
-    - name: Install vcpkg dependencies
+    - name: Skip vcpkg (using included SDL2)
       run: |
-        vcpkg install sdl2:x64-windows
+        echo "Using SDL2 included in repository under third_party/sdl2"
     
-    - name: Initialize LVGL submodule
+    - name: Verify submodules (Windows)
       shell: bash
       run: |
-        if [ ! -d "third_party/lvgl/.git" ]; then
-          git submodule add https://github.com/lvgl/lvgl.git third_party/lvgl || true
-          git submodule update --init --recursive
-        fi
-    
-    - name: Initialize LodePNG submodule
-      shell: bash
-      run: |
-        if [ ! -d "third_party/lodepng/.git" ]; then
-          cd third_party
-          git clone https://github.com/lvgl/lodepng.git
-          cd ..
-        fi
+        echo "Checking Windows submodule status:"
+        git submodule status
+        ls -la third_party/ || dir third_party
     
     - name: Build using build.bat
       shell: cmd

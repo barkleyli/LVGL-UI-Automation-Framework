@@ -12,69 +12,109 @@ endif()
 
 # Find required packages
 if(WIN32)
-    # For Windows, try to find SDL2 in our third_party directory first, then fallback to vcpkg
-    set(SDL2_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sdl2/SDL2-devel-2.30.8-VC/SDL2-2.30.8)
+    # For Windows, try multiple approaches to find SDL2
+    set(SDL2_LOCAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sdl2/SDL2-devel-2.30.8-VC/SDL2-2.30.8)
     
-    # Try local third_party first
-    find_path(SDL2_INCLUDE_DIR SDL.h 
-        HINTS 
-            ${SDL2_DIR}
-        PATH_SUFFIXES include
-        NO_DEFAULT_PATH
-    )
-    
-    # If not found locally, try vcpkg/system
-    if(NOT SDL2_INCLUDE_DIR)
-        find_package(PkgConfig)
-        if(PkgConfig_FOUND)
-            pkg_check_modules(SDL2 REQUIRED sdl2)
+    # Method 1: Try local third_party directory first (for development)
+    if(EXISTS ${SDL2_LOCAL_DIR})
+        message(STATUS "Trying local SDL2 at: ${SDL2_LOCAL_DIR}")
+        find_path(SDL2_INCLUDE_DIR SDL.h 
+            HINTS ${SDL2_LOCAL_DIR}
+            PATH_SUFFIXES include
+            NO_DEFAULT_PATH
+        )
+        
+        if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+            set(SDL2_LIB_SUFFIX "x64")
         else()
-            # Fallback to find_path for vcpkg
-            find_path(SDL2_INCLUDE_DIR SDL.h 
-                HINTS ENV SDL2DIR
-                PATH_SUFFIXES include
+            set(SDL2_LIB_SUFFIX "x86")
+        endif()
+        
+        if(SDL2_INCLUDE_DIR)
+            find_library(SDL2_LIBRARY 
+                NAMES SDL2 
+                HINTS ${SDL2_LOCAL_DIR}
+                PATH_SUFFIXES lib/${SDL2_LIB_SUFFIX} lib
+                NO_DEFAULT_PATH
             )
+            
+            find_library(SDL2MAIN_LIBRARY 
+                NAMES SDL2main 
+                HINTS ${SDL2_LOCAL_DIR}
+                PATH_SUFFIXES lib/${SDL2_LIB_SUFFIX} lib
+                NO_DEFAULT_PATH
+            )
+            
+            if(SDL2_LIBRARY AND SDL2MAIN_LIBRARY)
+                set(SDL2_LIBRARIES ${SDL2_LIBRARY} ${SDL2MAIN_LIBRARY})
+                message(STATUS "Found local SDL2: ${SDL2_INCLUDE_DIR}")
+            endif()
         endif()
     endif()
     
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set(SDL2_LIB_SUFFIX "x64")
-    else()
-        set(SDL2_LIB_SUFFIX "x86")
-    endif()
-    
-    # Only look for libraries if we found headers locally (not using pkg-config)
-    if(NOT SDL2_LIBRARIES)
-        find_library(SDL2_LIBRARY 
-            NAMES SDL2 
-            HINTS 
-                ENV SDL2DIR 
-                ${SDL2_DIR}
-            PATH_SUFFIXES lib/${SDL2_LIB_SUFFIX} lib
-        )
-        
-        find_library(SDL2MAIN_LIBRARY 
-            NAMES SDL2main 
-            HINTS 
-                ENV SDL2DIR 
-                ${SDL2_DIR}
-            PATH_SUFFIXES lib/${SDL2_LIB_SUFFIX} lib
-        )
-        
-        if(SDL2_LIBRARY AND SDL2MAIN_LIBRARY)
-            set(SDL2_LIBRARIES ${SDL2_LIBRARY} ${SDL2MAIN_LIBRARY})
-        endif()
-    endif()
-    
+    # Method 2: Try vcpkg find_package (for CI)
     if(NOT SDL2_INCLUDE_DIR OR NOT SDL2_LIBRARIES)
-        message(WARNING "SDL2 not found. Please install SDL2 development libraries or set SDL2DIR environment variable")
-        message(WARNING "For Windows: Install SDL2 from https://www.libsdl.org/download-2.0.php")
-        message(WARNING "Or use vcpkg: vcpkg install sdl2")
-        message(STATUS "Looking for SDL2 in: ${SDL2_DIR}")
-        message(STATUS "SDL2_INCLUDE_DIR: ${SDL2_INCLUDE_DIR}")
-        message(STATUS "SDL2_LIBRARIES: ${SDL2_LIBRARIES}")
+        message(STATUS "Local SDL2 not found, trying vcpkg...")
+        find_package(SDL2 QUIET)
+        if(SDL2_FOUND)
+            message(STATUS "Found SDL2 via find_package: ${SDL2_INCLUDE_DIRS}")
+            set(SDL2_INCLUDE_DIR ${SDL2_INCLUDE_DIRS})
+            set(SDL2_LIBRARIES ${SDL2_LIBRARIES})
+        endif()
+    endif()
+    
+    # Method 3: Try manual vcpkg paths (fallback)
+    if(NOT SDL2_INCLUDE_DIR OR NOT SDL2_LIBRARIES)
+        message(STATUS "find_package failed, trying manual vcpkg detection...")
+        find_path(SDL2_INCLUDE_DIR SDL.h 
+            PATHS 
+                $ENV{VCPKG_ROOT}/installed/x64-windows/include
+                C:/vcpkg/installed/x64-windows/include
+                ${CMAKE_PREFIX_PATH}/include
+            NO_DEFAULT_PATH
+        )
+        
+        if(SDL2_INCLUDE_DIR)
+            find_library(SDL2_LIBRARY 
+                NAMES SDL2 
+                PATHS 
+                    $ENV{VCPKG_ROOT}/installed/x64-windows/lib
+                    C:/vcpkg/installed/x64-windows/lib
+                    ${CMAKE_PREFIX_PATH}/lib
+                NO_DEFAULT_PATH
+            )
+            
+            find_library(SDL2MAIN_LIBRARY 
+                NAMES SDL2main 
+                PATHS 
+                    $ENV{VCPKG_ROOT}/installed/x64-windows/lib
+                    C:/vcpkg/installed/x64-windows/lib
+                    ${CMAKE_PREFIX_PATH}/lib
+                NO_DEFAULT_PATH
+            )
+            
+            if(SDL2_LIBRARY AND SDL2MAIN_LIBRARY)
+                set(SDL2_LIBRARIES ${SDL2_LIBRARY} ${SDL2MAIN_LIBRARY})
+                message(STATUS "Found SDL2 via manual vcpkg detection: ${SDL2_INCLUDE_DIR}")
+            endif()
+        endif()
+    endif()
+    
+    # Final check and error reporting
+    if(NOT SDL2_INCLUDE_DIR OR NOT SDL2_LIBRARIES)
+        message(FATAL_ERROR "SDL2 not found! Please install SDL2:
+        - For local development: Place SDL2 in third_party/sdl2/
+        - For CI: Use 'vcpkg install sdl2:x64-windows'
+        - Manual install: Download from https://www.libsdl.org/download-2.0.php
+        
+        Searched locations:
+        - Local: ${SDL2_LOCAL_DIR}
+        - vcpkg: $ENV{VCPKG_ROOT}/installed/x64-windows/
+        - System: ${CMAKE_PREFIX_PATH}")
     else()
-        message(STATUS "Found SDL2: ${SDL2_INCLUDE_DIR}")
+        message(STATUS "SDL2 configuration successful:")
+        message(STATUS "  Include: ${SDL2_INCLUDE_DIR}")
+        message(STATUS "  Libraries: ${SDL2_LIBRARIES}")
     endif()
 else()
     # Linux: Use pkg-config to find SDL2
@@ -162,8 +202,12 @@ endif()
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party
-    ${SDL2_INCLUDE_DIR}
 )
+
+# Add SDL2 include directory only if found
+if(SDL2_INCLUDE_DIR)
+    include_directories(${SDL2_INCLUDE_DIR})
+endif()
 
 # Source files
 set(SOURCES

@@ -164,11 +164,19 @@ jobs:
     
     - name: Install SDL2 for Windows CI
       run: |
+        Write-Host "Installing SDL2 via vcpkg..."
         vcpkg install sdl2:x64-windows
         if ($LASTEXITCODE -eq 0) {
           Write-Host "SDL2 installed via vcpkg successfully"
+          # Verify the installation
+          if (Test-Path "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\include\SDL.h") {
+            Write-Host "SDL2 headers found at: $env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\include\SDL.h"
+          } else {
+            Write-Host "Warning: SDL2 headers not found after installation"
+          }
         } else {
-          Write-Host "Warning: vcpkg SDL2 installation failed, will try without vcpkg"
+          Write-Host "Error: vcpkg SDL2 installation failed with exit code $LASTEXITCODE"
+          exit 1
         }
       shell: pwsh
     
@@ -179,28 +187,31 @@ jobs:
         git submodule status
         ls -la third_party/ || dir third_party
     
-    - name: Build without vcpkg (using local SDL2)
+    - name: Configure and Build with CMake
       run: |
         mkdir build
         cd build
-        Write-Host "Configuring with CMake (using local SDL2 in third_party)..."
+        Write-Host "Configuring with CMake..."
         
-        # Try default CMake configuration first (uses our local SDL2)
-        cmake ..
-        
-        # If that fails, try with vcpkg as fallback
-        if ($LASTEXITCODE -ne 0 -and $env:VCPKG_INSTALLATION_ROOT) {
-          Write-Host "Default CMake failed, trying with vcpkg as fallback..."
-          $vcpkgToolchain = "$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
-          if (Test-Path $vcpkgToolchain) {
-            cmake .. "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain"
-          } else {
-            Write-Host "vcpkg toolchain not found at: $vcpkgToolchain"
-          }
+        # Use vcpkg toolchain since we installed SDL2 via vcpkg
+        $vcpkgToolchain = "$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake"
+        if (Test-Path $vcpkgToolchain) {
+          Write-Host "Using vcpkg toolchain: $vcpkgToolchain"
+          cmake .. "-DCMAKE_TOOLCHAIN_FILE=$vcpkgToolchain" -DCMAKE_BUILD_TYPE=Release
+        } else {
+          Write-Host "vcpkg toolchain not found at: $vcpkgToolchain"
+          Write-Host "Trying without vcpkg toolchain..."
+          cmake .. -DCMAKE_BUILD_TYPE=Release
         }
         
         if ($LASTEXITCODE -ne 0) {
-          Write-Host "All CMake configuration attempts failed!"
+          Write-Host "CMake configuration failed!"
+          Write-Host "Environment info:"
+          Write-Host "VCPKG_INSTALLATION_ROOT: $env:VCPKG_INSTALLATION_ROOT"
+          if ($env:VCPKG_INSTALLATION_ROOT) {
+            Write-Host "vcpkg installed packages:"
+            Get-ChildItem "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\" -ErrorAction SilentlyContinue
+          }
           exit 1
         }
         

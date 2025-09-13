@@ -60,6 +60,18 @@ if(WIN32)
             message(STATUS "Found SDL2 via find_package: ${SDL2_INCLUDE_DIRS}")
             set(SDL2_INCLUDE_DIR ${SDL2_INCLUDE_DIRS})
             set(SDL2_LIBRARIES ${SDL2_LIBRARIES})
+        else()
+            # Try alternative SDL2 target names that vcpkg might use
+            find_package(SDL2 QUIET CONFIG)
+            if(TARGET SDL2::SDL2 AND TARGET SDL2::SDL2main)
+                message(STATUS "Found SDL2 via CONFIG mode with targets")
+                get_target_property(SDL2_INCLUDE_DIR SDL2::SDL2 INTERFACE_INCLUDE_DIRECTORIES)
+                set(SDL2_LIBRARIES SDL2::SDL2 SDL2::SDL2main)
+            elseif(TARGET SDL2::SDL2-static AND TARGET SDL2::SDL2main)
+                message(STATUS "Found SDL2 static via CONFIG mode with targets")
+                get_target_property(SDL2_INCLUDE_DIR SDL2::SDL2-static INTERFACE_INCLUDE_DIRECTORIES)
+                set(SDL2_LIBRARIES SDL2::SDL2-static SDL2::SDL2main)
+            endif()
         endif()
     endif()
     
@@ -101,7 +113,28 @@ if(WIN32)
     endif()
     
     # Final check and error reporting
-    if(NOT SDL2_INCLUDE_DIR OR NOT SDL2_LIBRARIES)
+    # Check if we have SDL2 targets or traditional variables
+    set(SDL2_FOUND FALSE)
+    if(TARGET SDL2::SDL2 OR TARGET SDL2::SDL2-static)
+        set(SDL2_FOUND TRUE)
+        message(STATUS "SDL2 configuration successful (using targets):")
+        if(TARGET SDL2::SDL2)
+            message(STATUS "  Target: SDL2::SDL2")
+        endif()
+        if(TARGET SDL2::SDL2-static)
+            message(STATUS "  Target: SDL2::SDL2-static")
+        endif()
+        if(TARGET SDL2::SDL2main)
+            message(STATUS "  Target: SDL2::SDL2main")
+        endif()
+    elseif(SDL2_INCLUDE_DIR AND SDL2_LIBRARIES)
+        set(SDL2_FOUND TRUE)
+        message(STATUS "SDL2 configuration successful (using variables):")
+        message(STATUS "  Include: ${SDL2_INCLUDE_DIR}")
+        message(STATUS "  Libraries: ${SDL2_LIBRARIES}")
+    endif()
+    
+    if(NOT SDL2_FOUND)
         message(FATAL_ERROR "SDL2 not found! Please install SDL2:
         - For local development: Place SDL2 in third_party/sdl2/
         - For CI: Use 'vcpkg install sdl2:x64-windows'
@@ -111,10 +144,6 @@ if(WIN32)
         - Local: ${SDL2_LOCAL_DIR}
         - vcpkg: $ENV{VCPKG_ROOT}/installed/x64-windows/
         - System: ${CMAKE_PREFIX_PATH}")
-    else()
-        message(STATUS "SDL2 configuration successful:")
-        message(STATUS "  Include: ${SDL2_INCLUDE_DIR}")
-        message(STATUS "  Libraries: ${SDL2_LIBRARIES}")
     endif()
 else()
     # Linux: Use pkg-config to find SDL2
@@ -157,7 +186,13 @@ if(EXISTS ${LVGL_DIR})
     add_subdirectory(${LVGL_DIR})
     
     # Ensure LVGL can find SDL2 headers
-    if(SDL2_INCLUDE_DIR)
+    if(TARGET SDL2::SDL2)
+        message(STATUS "Linking SDL2 target to LVGL")
+        target_link_libraries(lvgl PUBLIC SDL2::SDL2)
+    elseif(TARGET SDL2::SDL2-static)
+        message(STATUS "Linking SDL2 static target to LVGL")
+        target_link_libraries(lvgl PUBLIC SDL2::SDL2-static)
+    elseif(SDL2_INCLUDE_DIR)
         message(STATUS "Adding SDL2 include directory to LVGL: ${SDL2_INCLUDE_DIR}")
         target_include_directories(lvgl PUBLIC ${SDL2_INCLUDE_DIR})
     elseif(SDL2_INCLUDE_DIRS)
@@ -204,8 +239,8 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 
-# Add SDL2 include directory only if found
-if(SDL2_INCLUDE_DIR)
+# Add SDL2 include directory only if found (for traditional variables, targets handle this automatically)
+if(SDL2_INCLUDE_DIR AND NOT TARGET SDL2::SDL2 AND NOT TARGET SDL2::SDL2-static)
     include_directories(${SDL2_INCLUDE_DIR})
 endif()
 
@@ -228,17 +263,48 @@ if(EXISTS ${LVGL_DIR})
     # Enable LVGL for visual emulator
     target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_LVGL=1)
     
-    target_link_libraries(${PROJECT_NAME} 
-        lvgl
-        ${SDL2_LIBRARIES}
-        ${PTHREAD_LIBRARIES}
-    )
+    # Link SDL2 - use targets if available, otherwise variables
+    if(TARGET SDL2::SDL2 AND TARGET SDL2::SDL2main)
+        target_link_libraries(${PROJECT_NAME} 
+            lvgl
+            SDL2::SDL2
+            SDL2::SDL2main
+            ${PTHREAD_LIBRARIES}
+        )
+    elseif(TARGET SDL2::SDL2-static AND TARGET SDL2::SDL2main)
+        target_link_libraries(${PROJECT_NAME} 
+            lvgl
+            SDL2::SDL2-static
+            SDL2::SDL2main
+            ${PTHREAD_LIBRARIES}
+        )
+    else()
+        target_link_libraries(${PROJECT_NAME} 
+            lvgl
+            ${SDL2_LIBRARIES}
+            ${PTHREAD_LIBRARIES}
+        )
+    endif()
 else()
     # Fallback without LVGL for initial setup
-    target_link_libraries(${PROJECT_NAME} 
-        ${SDL2_LIBRARIES}
-        ${PTHREAD_LIBRARIES}
-    )
+    if(TARGET SDL2::SDL2 AND TARGET SDL2::SDL2main)
+        target_link_libraries(${PROJECT_NAME} 
+            SDL2::SDL2
+            SDL2::SDL2main
+            ${PTHREAD_LIBRARIES}
+        )
+    elseif(TARGET SDL2::SDL2-static AND TARGET SDL2::SDL2main)
+        target_link_libraries(${PROJECT_NAME} 
+            SDL2::SDL2-static
+            SDL2::SDL2main
+            ${PTHREAD_LIBRARIES}
+        )
+    else()
+        target_link_libraries(${PROJECT_NAME} 
+            ${SDL2_LIBRARIES}
+            ${PTHREAD_LIBRARIES}
+        )
+    endif()
 endif()
 
 # Windows specific libraries

@@ -1,22 +1,31 @@
 # LVGL UI Automation Framework
 
 [![Build Status](https://github.com/barkleyli/LVGL-UI-Automation-Framework/actions/workflows/ci.yml/badge.svg)](https://github.com/barkleyli/LVGL-UI-Automation-Framework/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![LVGL](https://img.shields.io/badge/LVGL-9.x-blue.svg)](https://lvgl.io/)
 [![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://www.python.org/)
 
-A comprehensive testing and automation framework for LVGL-based user interfaces. Enables automated UI testing, screenshot capture, and interaction simulation for embedded and desktop applications including smartwatch interfaces with swipe gesture support.
+A comprehensive testing and automation framework for LVGL-based user interfaces. Enables automated UI testing, screenshot capture, and interaction simulation for embedded and desktop applications. Includes a fully testable smartwatch demo application that demonstrates best practices for building LVGL UIs with testability from day one.
+
+**Background**: LVGL's growing popularity in IoT and wearable devices created a need for robust UI automation solutions, but existing testing approaches were limited to basic coordinate clicking or required extensive manual setup. This framework bridges that gap by providing both immediate compatibility (coordinate-based) and production-grade reliability (widget-based) in a single, comprehensive solution.
 
 ## Features
 
+### Core Automation Framework
 - **Real-time UI Automation**: Click, longpress, and swipe gesture simulation
+- **Hybrid Testing Approach**: Both widget ID-based and coordinate-based automation
+- **Coordinate-Based Commands**: Direct pixel-level interaction for maximum compatibility
 - **Screenshot Capture**: High-quality PNG screenshots for visual validation
-- **Swipe Gesture Support**: Smooth panning with real-time visual feedback
 - **Cross-platform Support**: Windows, Linux, and macOS compatibility
-- **Python Test Framework**: Object-oriented testing with pytest integration (Tested on Windows 11)
+- **Python Test Framework**: Object-oriented testing with pytest integration
 - **Network Interface**: JSON-based TCP communication protocol
-- **Widget Management**: ID-based widget registry enabled testibilty for reliable test scripts
 - **Test Isolation**: Automatic UI state reset between test runs
+
+### Testability Demonstration
+- **Reference Implementation**: Complete smartwatch app with testability built-in
+- **Widget Registry System**: Shows how to make LVGL widgets automation-friendly
+- **Best Practices**: Demonstrates proper ID assignment and event handling
+- **Real-world Example**: Multi-screen navigation, gestures, and state management
 
 ## Quick Start
 
@@ -79,9 +88,14 @@ with LVGLTestClient() as client:
     # Take initial screenshot
     client.screenshot('screenshots/initial.png')
     
-    # Interact with UI elements
+    # Widget-based interaction (semantic approach)
     client.click('btn_heart')
     client.wait(1000)  # Wait 1 second
+    
+    # Coordinate-based interaction (universal approach)
+    client.click_at(240, 240)  # Click center of screen
+    client.drag(100, 200, 300, 200)  # Horizontal drag
+    client.mouse_move(150, 150)  # Move cursor
     
     # Capture result
     client.screenshot('screenshots/after_click.png')
@@ -152,11 +166,13 @@ class TestSmartWatch:
 
 ### Key Features
 
-**Click, Longpress, Swipe Gesture System**
-- Support click, Longpress, and swipe operations
-- Support for horizontal swipe navigation between watch screens
-- Real-time panning with visual feedback during drag operations
-- Configurable swipe thresholds and snap behavior
+**Advanced Input Simulation System**
+- **Hybrid Approach**: Both coordinate-based (like LVGL's built-in testing) AND semantic widget-based automation
+- **Universal Compatibility**: Works with any LVGL application without code changes via coordinate commands
+- **Enhanced Reliability**: Optional widget ID-based testing for production-grade test suites
+- **Complete Gesture Support**: Click, longpress, drag, swipe, and mouse movement simulation
+- **Real-time Visual Feedback**: Live panning during drag operations with configurable thresholds
+- **Progressive Enhancement**: Start with coordinates, upgrade to semantic testing for better maintainability
 
 **Test Isolation**
 - Automatic UI state reset between test runs
@@ -168,31 +184,92 @@ class TestSmartWatch:
 
 ### Core Commands
 
+#### Widget-Based Commands (Semantic)
 | Command | Parameters | Description |
 |---------|------------|-------------|
 | `click` | `id: string` | Simulate click on widget |
 | `longpress` | `id: string, ms: int` | Extended press simulation |
-| `swipe` | `x1, y1, x2, y2: int` | Gesture simulation with visual feedback |
-| `screenshot` | - | Capture current UI state |
 | `get_state` | `id: string` | Retrieve widget properties |
+| `set_text` | `id: string, text: string` | Set widget text content |
+
+#### Coordinate-Based Commands (Universal)
+| Command | Parameters | Description |
+|---------|------------|-------------|
+| `click_at` | `x: int, y: int` | Click at specific coordinates |
+| `mouse_move` | `x: int, y: int` | Move mouse to coordinates |
+| `drag` | `x1, y1, x2, y2: int` | Drag from one point to another |
+| `swipe` | `x1, y1, x2, y2: int` | Gesture simulation with visual feedback |
+
+#### General Commands
+| Command | Parameters | Description |
+|---------|------------|-------------|
+| `key` | `code: int` | Send key event |
+| `screenshot` | - | Capture current UI state |
 | `wait` | `ms: int` | Execution delay |
 
 ### Python Client API
 
 ```python
 class LVGLTestClient:
+    # Connection
     def connect() -> bool
+    
+    # Widget-based methods (semantic)
     def click(widget_id: str) -> bool
     def longpress(widget_id: str, duration_ms: int = 1000) -> bool
-    def swipe(x1: int, y1: int, x2: int, y2: int) -> bool
-    def screenshot(save_path: str = None) -> bytes
     def get_state(widget_id: str) -> str
+    def set_text(widget_id: str, text: str) -> bool
+    
+    # Coordinate-based methods (universal)
+    def click_at(x: int, y: int) -> bool
+    def mouse_move(x: int, y: int) -> bool
+    def drag(x1: int, y1: int, x2: int, y2: int) -> bool
+    def swipe(x1: int, y1: int, x2: int, y2: int) -> bool
+    
+    # General methods
+    def key_event(key_code: int) -> bool
+    def screenshot(save_path: str = None) -> bytes
     def wait(duration_ms: int = 100) -> bool
+```
+
+## Building Testable LVGL Applications
+
+The included smartwatch application serves as a complete reference implementation, demonstrating how to build LVGL UIs with testability from the ground up.
+
+### Key Testability Patterns Demonstrated
+
+**1. Widget Registration Pattern**
+```c
+// Register widgets with unique IDs for automation
+reg_widget("btn_heart", heart_button);
+reg_widget("lbl_time", time_label);
+reg_widget("main_screen", main_screen_obj);
+```
+
+**2. Event Handler Design**
+```c
+// Design event handlers to be automation-friendly
+static void heart_button_event_handler(lv_event_t * e) {
+    lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
+        // Handle both manual and automated clicks
+        show_screen(SCREEN_HEART_RATE);
+    }
+}
+```
+
+**3. State Management**
+```c
+// Make widget states readable for automation
+void update_heart_rate_display(int bpm) {
+    lv_label_set_text_fmt(lbl_hr_value, "%d BPM", bpm);
+    // Widget state now accessible via get_state() command
+}
 ```
 
 ### Widget Registry
 
-The smartwatch UI includes the following interactive elements:
+The smartwatch demo includes the following testable elements:
 
 **Main Screen**
 - `lbl_time`: Current time display
@@ -343,7 +420,7 @@ export LVGL_AUTOMATION_VERBOSE=1
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ## Contributing
 

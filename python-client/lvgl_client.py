@@ -174,6 +174,34 @@ class LVGLTestClient:
             print(f"Wait failed: {e}")
             return False
     
+    # Coordinate-based commands
+    def click_at(self, x: int, y: int) -> bool:
+        """Click at specific coordinates."""
+        try:
+            response = self._send_command({"cmd": "click_at", "x": x, "y": y})
+            return response.get("status") == "ok"
+        except Exception as e:
+            print(f"Click at ({x}, {y}) failed: {e}")
+            return False
+    
+    def mouse_move(self, x: int, y: int) -> bool:
+        """Move mouse to specific coordinates."""
+        try:
+            response = self._send_command({"cmd": "mouse_move", "x": x, "y": y})
+            return response.get("status") == "ok"
+        except Exception as e:
+            print(f"Mouse move to ({x}, {y}) failed: {e}")
+            return False
+    
+    def drag(self, x1: int, y1: int, x2: int, y2: int) -> bool:
+        """Drag from one coordinate to another."""
+        try:
+            response = self._send_command({"cmd": "drag", "x1": x1, "y1": y1, "x2": x2, "y2": y2})
+            return response.get("status") == "ok"
+        except Exception as e:
+            print(f"Drag from ({x1}, {y1}) to ({x2}, {y2}) failed: {e}")
+            return False
+    
     def screenshot(self, save_path: Optional[str] = None) -> Optional[bytes]:
         """Take a screenshot and optionally save to file."""
         try:

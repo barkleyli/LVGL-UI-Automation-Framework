@@ -332,6 +332,53 @@ static void process_command(SOCKET client, const char *json_cmd) {
         test_wait(ms);
         send_ok_response(client, cmd);
         
+    } else if (strcmp(cmd, "click_at") == 0) {
+        int x, y;
+        if (find_key(&parser, "x") != 0 || (x = parse_int(&parser)) < 0 ||
+            find_key(&parser, "y") != 0 || (y = parse_int(&parser)) < 0) {
+            send_error_response(client, cmd, "invalid_coordinates");
+            return;
+        }
+        
+        int result = test_click_at(x, y);
+        if (result == TEST_OK) {
+            send_ok_response(client, cmd);
+        } else {
+            send_error_response(client, cmd, "click_failed");
+        }
+        
+    } else if (strcmp(cmd, "mouse_move") == 0) {
+        int x, y;
+        if (find_key(&parser, "x") != 0 || (x = parse_int(&parser)) < 0 ||
+            find_key(&parser, "y") != 0 || (y = parse_int(&parser)) < 0) {
+            send_error_response(client, cmd, "invalid_coordinates");
+            return;
+        }
+        
+        int result = test_mouse_move(x, y);
+        if (result == TEST_OK) {
+            send_ok_response(client, cmd);
+        } else {
+            send_error_response(client, cmd, "mouse_move_failed");
+        }
+        
+    } else if (strcmp(cmd, "drag") == 0) {
+        int x1, y1, x2, y2;
+        if (find_key(&parser, "x1") != 0 || (x1 = parse_int(&parser)) < 0 ||
+            find_key(&parser, "y1") != 0 || (y1 = parse_int(&parser)) < 0 ||
+            find_key(&parser, "x2") != 0 || (x2 = parse_int(&parser)) < 0 ||
+            find_key(&parser, "y2") != 0 || (y2 = parse_int(&parser)) < 0) {
+            send_error_response(client, cmd, "invalid_coordinates");
+            return;
+        }
+        
+        int result = test_drag(x1, y1, x2, y2);
+        if (result == TEST_OK) {
+            send_ok_response(client, cmd);
+        } else {
+            send_error_response(client, cmd, "drag_failed");
+        }
+        
     } else {
         send_error_response(client, cmd, "unknown_command");
     }

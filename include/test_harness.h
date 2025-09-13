@@ -32,6 +32,11 @@ int test_set_text(const char *id, const char *text);
 int test_screenshot(uint8_t **png_data, size_t *png_len);
 void test_wait(uint32_t ms);
 
+// Coordinate-based test functions
+int test_click_at(int x, int y);
+int test_mouse_move(int x, int y);
+int test_drag(int x1, int y1, int x2, int y2);
+
 // Helper functions for input emulation
 void emulate_click_at(int x, int y);
 void emulate_longpress_at(int x, int y, uint32_t ms);

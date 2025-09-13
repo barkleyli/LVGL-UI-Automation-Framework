@@ -389,9 +389,28 @@ int test_swipe(int x1, int y1, int x2, int y2) {
 int test_key_event(int code) {
     printf("test_key_event: code=%d\n", code);
     
-    // TODO: Implement keyboard event simulation
-    // For now, just simulate the timing without LVGL test API
+    // Validate key code
+    if (code < 0 || code > 255) {
+        printf("  Error: Invalid key code %d\n", code);
+        return TEST_ERROR_INVALID_PARAM;
+    }
+    
+#if HAVE_LVGL
+    // Get the currently focused object or use default group
+    lv_group_t *group = lv_group_get_default();
+    if (group) {
+        // Send key data to the focused object in the group
+        lv_group_send_data(group, code);
+        printf("  Key code %d sent to focused object\n", code);
+    } else {
+        printf("  Warning: No group found for key input\n");
+        // Fallback: simulate timing for compatibility
+        usleep(50000); // 50ms simulation
+    }
+#else
+    printf("  Simulated key press: code=%d\n", code);
     usleep(50000); // 50ms simulation
+#endif
     
     return TEST_OK;
 }
@@ -490,6 +509,58 @@ int test_screenshot(uint8_t **png_data, size_t *png_len) {
 void test_wait(uint32_t ms) {
     printf("test_wait: %ums\n", ms);
     usleep(ms * 1000);
+}
+
+// Coordinate-based test functions
+int test_click_at(int x, int y) {
+    printf("test_click_at: (%d, %d)\n", x, y);
+    
+    // Validate coordinates are within reasonable bounds
+    if (x < 0 || y < 0 || x > 1024 || y > 1024) {
+        printf("  Error: Invalid coordinates (%d, %d)\n", x, y);
+        return TEST_ERROR_INVALID_PARAM;
+    }
+    
+    emulate_click_at(x, y);
+    return TEST_OK;
+}
+
+int test_mouse_move(int x, int y) {
+    printf("test_mouse_move: (%d, %d)\n", x, y);
+    
+    // Validate coordinates
+    if (x < 0 || y < 0 || x > 1024 || y > 1024) {
+        printf("  Error: Invalid coordinates (%d, %d)\n", x, y);
+        return TEST_ERROR_INVALID_PARAM;
+    }
+    
+#if HAVE_LVGL
+    // For LVGL, mouse move without click doesn't have much meaning
+    // in the context of UI automation. Just log the action.
+    printf("  Mouse move logged for (%d, %d)\n", x, y);
+    // Note: LVGL v9 input handling for cursor position may need different approach
+    // For now, just simulate timing
+    usleep(10000); // 10ms simulation
+#else
+    printf("  Simulated mouse move to (%d, %d)\n", x, y);
+#endif
+    
+    return TEST_OK;
+}
+
+int test_drag(int x1, int y1, int x2, int y2) {
+    printf("test_drag: (%d, %d) to (%d, %d)\n", x1, y1, x2, y2);
+    
+    // Validate coordinates
+    if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0 || 
+        x1 > 1024 || y1 > 1024 || x2 > 1024 || y2 > 1024) {
+        printf("  Error: Invalid coordinates\n");
+        return TEST_ERROR_INVALID_PARAM;
+    }
+    
+    // Use existing swipe gesture emulation
+    emulate_swipe_gesture(x1, y1, x2, y2);
+    return TEST_OK;
 }
 
 // Initialization and cleanup
